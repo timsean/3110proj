@@ -7,126 +7,126 @@ let rotorIII = "BDFHJLCPRTXVZNYEIWGAKMUSQO"
 let reflB    = "YRUHQSLDPXNGOKMIEBFZCWVJAT"
 let rotorList = rotorI::rotorII::rotorIII::[]
 
-let cipherHelper (refl:string) (rotors:string list) (notches:char list) 
+let cipher_helper (refl:string) (rotors:string list) (notches:char list) 
   (starts:char list) (s:string) (verbose:bool) : string = 
 
   (* Takes in a list of characters and returns a list of indices 
    * that the letters correspond to. A=0, B=1, C=3, *)
-  let rec getLetterIndices letters = 
+  let rec get_letter_indices letters = 
     match letters with
     | [] -> []
-    | hd::tl -> Char.code hd - 65 :: getLetterIndices tl in
+    | hd::tl -> Char.code (Char.uppercase hd) - 65 :: get_letter_indices tl in
 
   (* Calculate the start position relative to A, the 0th letter*)
-  let startPos = getLetterIndices starts in
+  let start_pos = get_letter_indices starts in
 
   (* Calculate the notch positions relative to A, the 0th letter*)
-  let notchPos = getLetterIndices notches in
+  let notch_pos = get_letter_indices notches in
 
-  (* Maps an input postion (inPos) to an output position with rotor r 
-   * and rotor position rPos from right to left*)
-  let getOutputPos r rPos inPos= 
-    let index = Char.code (String.get r ((rPos + inPos) mod 26)) - 65 in
-    let outPos = if index < rPos then index + 26 - rPos else index - rPos in
+  (* Maps an input postion (in_pos) to an output position with rotor r 
+   * and rotor position r_pos from right to left*)
+  let get_output_pos r r_pos in_pos= 
+    let index = Char.code (String.get r ((r_pos + in_pos) mod 26)) - 65 in
+    let out_pos = if index < r_pos then index + 26 - r_pos else index - r_pos in
       (if verbose then Printf.printf "%c -> %c \n" 
-      (Char.chr (inPos + 65)) (Char.chr (outPos + 65)); outPos) in
+      (Char.chr (in_pos + 65)) (Char.chr (out_pos + 65)); out_pos) in
 
   (* Ciphers a letter through the rotors from right to left
-   * Takes in input current rotor position rotorPos and input position
+   * Takes in input current rotor position rotor_pos and input position
    * represented by letter (an ASCII uppercase char); This function 
    * maps an input position to an output position through the rotors*)
-  let mapRotors rotorPos letter = 
-    let rec rotorSim r rPos inPos= 
-      match r,rPos with
+  let map_rotors rotor_pos letter = 
+    let rec rotor_sim r r_pos in_pos= 
+      match r,r_pos with
       | hd_r::tl_r, hd_rp::tl_rp -> 
-          if tl_r = [] then getOutputPos hd_r hd_rp inPos
-          else rotorSim tl_r tl_rp (getOutputPos hd_r hd_rp inPos)
+          if tl_r = [] then get_output_pos hd_r hd_rp in_pos
+          else rotor_sim tl_r tl_rp (get_output_pos hd_r hd_rp in_pos)
       | _, _ -> -33 in
-  Char.chr (rotorSim (List.rev rotors) (List.rev rotorPos) 
+  Char.chr (rotor_sim (List.rev rotors) (List.rev rotor_pos) 
     (Char.code letter - 65) + 65) in
 
   (* Maps a letter through the reflector*)
-  let mapRefl letter = 
+  let map_refl letter = 
     let output = String.get refl (Char.code letter - 65) in
     (if verbose then Printf.printf "%c -> %c \n" letter output; output) in
 
   (* Maps an input position to an outputposition with rotor r and rotor
-   * position rPos from left to right*)
-  let getOutputPosRev r rPos inPos = 
-    let index = String.index r (Char.chr ((rPos + inPos) mod 26 + 65)) in
-    let outPos =  if index < rPos then index + 26 - rPos else index - rPos in
+   * position r_pos from left to right*)
+  let get_output_pos_rev r r_pos in_pos = 
+    let index = String.index r (Char.chr ((r_pos + in_pos) mod 26 + 65)) in
+    let out_pos =  if index < r_pos then index + 26 - r_pos else index - r_pos in
       (if verbose then Printf.printf "%c -> %c \n" 
-      (Char.chr (inPos + 65)) (Char.chr (outPos + 65)); outPos) in
+      (Char.chr (in_pos + 65)) (Char.chr (out_pos + 65)); out_pos) in
 
   (* Ciphers a letter through the rotors from left to right. Same 
-   * concept as mapRotors*)
-  let mapRotorsRev rotorPos letter = 
-    let rec rotorSim r rPos inPos = 
-      match r,rPos with
+   * concept as map_rotors*)
+  let map_rotors_rev rotor_pos letter = 
+    let rec rotor_sim r r_pos in_pos = 
+      match r,r_pos with
       | hd_r::tl_r, hd_rp::tl_rp -> 
-          if tl_r = [] then getOutputPosRev hd_r hd_rp inPos 
-          else rotorSim tl_r tl_rp (getOutputPosRev hd_r hd_rp inPos) 
+          if tl_r = [] then get_output_pos_rev hd_r hd_rp in_pos 
+          else rotor_sim tl_r tl_rp (get_output_pos_rev hd_r hd_rp in_pos) 
       | _, _ -> -33 in
-  Char.chr (rotorSim rotors rotorPos (Char.code letter - 65) + 65) in
+  Char.chr (rotor_sim rotors rotor_pos (Char.code letter - 65) + 65) in
 
   (* Runs the enigma encryption process on a single letter using the 
-   * current rotor position rotorPos by chaining all of the mapping
+   * current rotor position rotor_pos by chaining all of the mapping
    * helper functions for various stages of the enigma machine*)
-  let mapAll rotorPos letter = 
-    mapRotorsRev rotorPos (mapRefl (mapRotors rotorPos letter)) in
+  let map_all rotor_pos letter = 
+    map_rotors_rev rotor_pos (map_refl (map_rotors rotor_pos letter)) in
 
   (* Calculates the next set of rotor positions based on the current 
    * rotor positions. The input and output rotor positions are in the 
    * order of left to right *)
-  let getNextRotorPos curPos =          
+  let get_next_rotor_pos cur_pos =          
     (* Just a helper function to get the next index with wrapping*)
-    let nextIndex i = 
+    let next_index i = 
       if i = 25 then 0 else i+1 in
 
     (* The helper function's rotor pos input list must be right to left 
      * The returned output list is left to right*)
-    let rec calcRotorPos curP notchP turnRotor nextPos= 
-      match curP,notchP with
+    let rec calc_rotor_pos cur_p notch_p turn_rotor next_pos= 
+      match cur_p,notch_ with
       | hd_s::tl_s, hd_n::tl_n -> 
           if List.length tl_s + 1 = List.length rotors then
-            calcRotorPos tl_s tl_n (if hd_s = hd_n then true else false) 
-            ((nextIndex hd_s)::nextPos)
+            calc_rotor_pos tl_s tl_n (if hd_s = hd_n then true else false) 
+            ((next_index hd_s)::next_pos)
           else 
-            calcRotorPos tl_s tl_n (if hd_s = hd_n then true else false)
-            (if turnRotor || (if tl_s = [] then false else hd_s = hd_n)
-            then ((nextIndex hd_s)::nextPos)
-            else (hd_s::nextPos))
-      | _, _ -> nextPos in
-    calcRotorPos (List.rev curPos) (List.rev notchPos) false [] in
+            calc_rotor_pos tl_s tl_n (if hd_s = hd_n then true else false)
+            (if turn_rotor || (if tl_s = [] then false else hd_s = hd_n)
+            then ((next_index hd_s)::next_pos)
+            else (hd_s::next_pos))
+      | _, _ -> next_pos in
+    calc_rotor_pos (List.rev cur_pos) (List.rev notch_pos) false [] in
 
   (* Recurse through the string str and encrypt every letter 
    * s_idx is the current absolute index in the string
    * c_idx is the current letter index in the string for use by
    *    the cipher mapping; it doesn't include puntuation or spaces
    * e_list the list of reverse characters that has been encrypted*)
-  let rec encrypt str s_idx rotPos e_list = 
+  let rec encrypt str s_idx rot_pos e_list = 
     match str.[s_idx] with
     | ' ' -> if s_idx + 1 < String.length str then 
-      encrypt str (s_idx+1) rotPos (" "::e_list) else " "::e_list
+      encrypt str (s_idx+1) rot_pos (" "::e_list) else " "::e_list
     | _ -> 
-      let nextRotorPos = getNextRotorPos rotPos in
+      let next_rotor_pos = get_next_rotor_pos rot_pos in
       (if verbose then 
       (Printf.printf "Current Rotor Position: " ;
       List.iter 
         (fun rIdx -> Printf.printf "%c " (Char.chr (rIdx + 65)))
-        (getNextRotorPos rotPos) ;
+        (get_next_rotor_pos rot_pos) ;
       Printf.printf "\n") ;
       if s_idx + 1 < String.length str then 
-        encrypt str (s_idx+1) (nextRotorPos) (
-        (Char.escaped (mapAll (nextRotorPos) str.[s_idx]))::e_list) 
+        encrypt str (s_idx+1) (next_rotor_pos) (
+        (Char.escaped (map_all (next_rotor_pos) str.[s_idx]))::e_list) 
       else 
-        (Char.escaped (mapAll (nextRotorPos) str.[s_idx]))::e_list) in
-  String.concat "" (List.rev (encrypt (String.uppercase s) 0 startPos []))
+        (Char.escaped (map_all (next_rotor_pos) str.[s_idx]))::e_list) in
+  String.concat "" (List.rev (encrypt (String.uppercase s) 0 start_pos []))
 
 let cipher (refl:string) (rotors:string list) (notches:char list) 
   (starts:char list) (s:string) : string = 
-  cipherHelper refl rotors notches starts s false
+  cipher_helper refl rotors notches starts s false
 
 let simulate (refl:string) (rotors:string list) (notches:char list) 
   (starts:char list) (s:string) : string = 
-  cipherHelper refl rotors notches starts s true
+  cipher_helper refl rotors notches starts s true
