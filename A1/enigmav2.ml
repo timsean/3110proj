@@ -1,27 +1,24 @@
 (*Discussed the operations of the enigma with grr37 ssh88*)
-let testString = "HELLO WORLD"
 let id       = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+let plugb    = "ZDXBFEGHVJKLMNOPRQSTUIWCYA"
 let rotorI   = "EKMFLGDQVZNTOWYHXUSPAIBRCJ"
 let rotorII  = "AJDKSIRUXBLHWTMCQGZNPYFVOE"
 let rotorIII = "BDFHJLCPRTXVZNYEIWGAKMUSQO"
 let reflB    = "YRUHQSLDPXNGOKMIEBFZCWVJAT"
 let rotorList = rotorI::rotorII::rotorIII::[]
 
-let cipher_helper (refl:string) (rotors:string list) (notches:char list) 
-  (starts:char list) (s:string) (verbose:bool) : string = 
+let cipher_helper (refl:string) (rotors:string list) (notches:string list) 
+  (starts:char list) (plugboard:string) (s:string) (verbose:bool) : string = 
 
   (* Takes in a list of characters and returns a list of indices 
    * that the letters correspond to. A=0, B=1, C=3, *)
   let rec get_letter_indices letters = 
     match letters with
     | [] -> []
-    | hd::tl -> Char.code (Char.uppercase hd) - 65 :: get_letter_indices tl in
+    | hd::tl -> Char.code hd - 65 :: get_letter_indices tl in
 
   (* Calculate the start position relative to A, the 0th letter*)
   let start_pos = get_letter_indices starts in
-
-  (* Calculate the notch positions relative to A, the 0th letter*)
-  let notch_pos = get_letter_indices notches in
 
   (* Maps an input postion (in_pos) to an output position with rotor r 
    * and rotor position r_pos from right to left*)
@@ -48,7 +45,8 @@ let cipher_helper (refl:string) (rotors:string list) (notches:char list)
   (* Maps a letter through the reflector*)
   let map_refl letter = 
     let output = String.get refl (Char.code letter - 65) in
-    (if verbose then Printf.printf "%c -> %c \n" letter output; output) in
+    (if verbose then 
+      Printf.printf "Reflector: %c -> %c \n" letter output; output) in
 
   (* Maps an input position to an outputposition with rotor r and rotor
    * position r_pos from left to right*)
@@ -69,11 +67,18 @@ let cipher_helper (refl:string) (rotors:string list) (notches:char list)
       | _, _ -> -33 in
   Char.chr (rotor_sim rotors rotor_pos (Char.code letter - 65) + 65) in
 
+  (* Maps a letter through the plugboard; Works the same as map_refl*)
+  let map_pb letter = 
+    let output = String.get plugboard (Char.code letter - 65) in
+    (if verbose then 
+      Printf.printf "Plugboard: %c -> %c \n" letter output; output) in
+
   (* Runs the enigma encryption process on a single letter using the 
    * current rotor position rotor_pos by chaining all of the mapping
    * helper functions for various stages of the enigma machine*)
   let map_all rotor_pos letter = 
-    map_rotors_rev rotor_pos (map_refl (map_rotors rotor_pos letter)) in
+    map_pb (map_rotors_rev rotor_pos (map_refl 
+    (map_rotors rotor_pos (map_pb letter)))) in
 
   (* Calculates the next set of rotor positions based on the current 
    * rotor positions. The input and output rotor positions are in the 
@@ -86,18 +91,21 @@ let cipher_helper (refl:string) (rotors:string list) (notches:char list)
     (* The helper function's rotor pos input list must be right to left 
      * The returned output list is left to right*)
     let rec calc_rotor_pos cur_p notch_p turn_rotor next_pos= 
-      match cur_p,notch_ with
+      match cur_p,notch_p with
       | hd_s::tl_s, hd_n::tl_n -> 
           if List.length tl_s + 1 = List.length rotors then
-            calc_rotor_pos tl_s tl_n (if hd_s = hd_n then true else false) 
-            ((next_index hd_s)::next_pos)
+            calc_rotor_pos tl_s tl_n 
+            (if String.contains hd_n (Char.chr (hd_s+65)) 
+            then true else false) ((next_index hd_s)::next_pos)
           else 
-            calc_rotor_pos tl_s tl_n (if hd_s = hd_n then true else false)
-            (if turn_rotor || (if tl_s = [] then false else hd_s = hd_n)
+            calc_rotor_pos tl_s tl_n 
+            (if String.contains hd_n (Char.chr (hd_s+65)) then true else false)
+            (if turn_rotor || (if tl_s = [] then false else 
+              String.contains hd_n (Char.chr (hd_s+65)))
             then ((next_index hd_s)::next_pos)
             else (hd_s::next_pos))
       | _, _ -> next_pos in
-    calc_rotor_pos (List.rev cur_pos) (List.rev notch_pos) false [] in
+    calc_rotor_pos (List.rev cur_pos) (List.rev notches) false [] in
 
   (* Recurse through the string str and encrypt every letter 
    * s_idx is the current absolute index in the string
@@ -125,8 +133,21 @@ let cipher_helper (refl:string) (rotors:string list) (notches:char list)
 
 let cipher (refl:string) (rotors:string list) (notches:char list) 
   (starts:char list) (s:string) : string = 
-  cipher_helper refl rotors notches starts s false
+  (* Convert the notch locations to a list of strings from a list of chars*)
+  let notches_string = List.map (Char.escaped) notches in
+  cipher_helper refl rotors notches_string starts id s false
 
 let simulate (refl:string) (rotors:string list) (notches:char list) 
   (starts:char list) (s:string) : string = 
-  cipher_helper refl rotors notches starts s true
+  (* Convert the notch locations to a list of strings from a list of chars*)
+  let notches_string = List.map (Char.escaped) notches in
+  cipher_helper refl rotors notches_string starts id s true
+
+(* Implemented multiple notches and plugboard*)
+let cipher_karma (refl:string) (rotors:string list) (notches:string list) 
+  (starts:char list) (plugboard:string) (s:string) : string = 
+  cipher_helper refl rotors notches starts plugboard s false
+
+let simulate_karma (refl:string) (rotors:string list) (notches:string list) 
+  (starts:char list) (plugboard:string) (s:string) : string = 
+  cipher_helper refl rotors notches starts plugboard s true
