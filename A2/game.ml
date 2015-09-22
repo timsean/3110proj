@@ -1,4 +1,3 @@
-#require "yojson"
 open Yojson
 (*Record for an exit*)
 type exit =
@@ -96,6 +95,32 @@ let startItems = extract_start_items t
 
 let rec main_game_loop (visited_rooms : string list)
   (item_locations : (string * string) list) (current_room : string)
-  (inventory : string list) (points : int) (turns : int)
+  (inventory : string list) (points : int) (turns : int) =
   (*Read the input*)
-  let input = read_line ()
+  let input = String.lowercase (read_line ()) in
+  (*Tokenize the string for pattern matching*)
+  let input_split = Str.bounded_split (Str.regexp "[ \t]+") input 2 in
+  (*Pattern match the input to figure out what the user wants*)
+  let decode_input command =
+    match command with
+    (*quit command*)
+    | "quit"::tl -> Printf.printf "Quitting game\n"
+    (*look command*)
+    | "look"::tl -> main_game_loop [] [] "" [] 0 0
+    (*inventory command*)
+    | hd::tl when hd = "inventory" || hd = "inv" ->
+      main_game_loop [] [] "" [] 0 0
+    (*movement commands*)
+    | hd::tl when hd = "go" ->
+      main_game_loop [] [] "" [] 0 0
+    (*item commands*)
+    | hd::tl when hd = "take" || hd = "drop" ->
+      main_game_loop [] [] "" [] 0 0
+    (*unrecognized commands*)
+    | _ -> Printf.printf "Sorry I don't understand that\n";
+      main_game_loop [] [] "" [] 0 0 in
+  decode_input input_split in
+
+main_game_loop [] [] "" [] 0 0
+
+
