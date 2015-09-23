@@ -154,15 +154,32 @@ let rec main_game_loop (visited_rooms : string list)
   let goto_room move =
     let exit = get_exit move in
     if exit <> [] then
+    (*Create a temporary variable for storing the next room room_rec*)
+    let next_room = List.hd (List.filter
+        (fun (room:room_rec) -> room.id = (List.hd exit).room) rooms) in
     (*Print out the room description for the next room*)
-    print_room
-      (List.hd (List.filter
-        (fun (room:room_rec) -> room.id = (List.hd exit).room) rooms));
-    main_game_loop
-    (if visited (List.hd exit).room
+    print_room next_room;
+    (*Call main loop again with the new room*)
+    (main_game_loop
+    (if visited next_room.id
       then visited_rooms else (List.hd exit).room::visited_rooms)
     item_locations
-    (List.hd exit).room inventory 0 0 in
+    (List.hd exit).room inventory
+    (points +
+      (if visited next_room.id then 0 else next_room.points))
+    (turns + 1))
+    else Printf.printf "%s is not a valid move! \n" move;
+      main_game_loop
+        visited_rooms item_locations current_room_id inventory points turns in
+  (*Helper function for calculate the number of points an item is worth
+   *in the room it's in. To be used by take_item and drop_item.
+   *An item will only be worth its points when it's in the designated room
+   *This function returns the item's points if it's in the designated room
+   *and 0 otherwise*)
+  let calc_item_points item_id =
+    if List.filter (fun tre -> tre = item_id) current_room.treasures <> []
+    then (List.hd (List.filter (fun i -> i.id = item_id) items)).points
+    else 0 in
   (*Function for picking up an item
    *Function calls main_game_loop with new states to go to next turn*)
   let take_item item_id =
@@ -171,10 +188,12 @@ let rec main_game_loop (visited_rooms : string list)
       visited_rooms
       (*Generate the new list of item locations with the taken item removed*)
       (List.filter (fun it_loc -> fst it_loc <> item_id) item_locations)
-      current_room_id (item_id::inventory) 0 0
+      current_room_id (item_id::inventory)
+      (points - (calc_item_points item_id))
+      (turns + 1)
     else Printf.printf "%s does not exist in this room.\n" item_id;
       main_game_loop
-      visited_rooms item_locations current_room_id inventory points turns in
+        visited_rooms item_locations current_room_id inventory points turns in
   (*Function for dropping an item
    *Function calls main_game_loop with new states to go to next turn*)
   let drop_item item_id =
@@ -183,10 +202,12 @@ let rec main_game_loop (visited_rooms : string list)
       visited_rooms
       (*Generate the new list of item locations with the dropped item added*)
       ((item_id, current_room_id)::item_locations)
-      current_room_id (List.filter (fun id -> id <> item_id) inventory) 0 0
+      current_room_id (List.filter (fun id -> id <> item_id) inventory)
+      (points + (calc_item_points item_id))
+      (turns + 1)
     else Printf.printf "%s is not in your inventory.\n" item_id;
       main_game_loop
-      visited_rooms item_locations current_room_id inventory points turns in
+        visited_rooms item_locations current_room_id inventory points turns in
   (*Pattern match the input to figure out what the user wants*)
   let decode_input command =
     match command with
@@ -226,4 +247,10 @@ let rec main_game_loop (visited_rooms : string list)
       current_room_id inventory 0 0 in
   decode_input input_split in
 
-main_game_loop [] start_item_locations start_room start_items 0 0
+main_game_loop
+  [start_room]
+  start_item_locations
+  start_room start_items
+  (List.hd (List.filter
+    (fun (room:room_rec) -> room.id = start_room) rooms)).points
+  0
