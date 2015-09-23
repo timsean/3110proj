@@ -93,6 +93,7 @@ let items = extract_items t
 let rooms = extract_rooms t
 let start_room = extract_start_room t
 let start_items = extract_start_items t
+(*The max number of points that can be earned*)
 let max_points =
   let get_treasure_pts treasure =
     (List.hd (List.filter (fun i -> i.id = treasure) items)).points in
@@ -101,12 +102,11 @@ let max_points =
     (List.fold_left
       (fun pts tre -> get_treasure_pts tre + pts) 0 room.treasures)
      + pts) 0 rooms
-
+(*The list of item locations at the start of the game*)
 let start_item_locations =
-  List.fold_left
+  List.flatten (List.fold_left
   (fun i_loc_list (room:room_rec) ->
-    (List.map (fun item -> (item, room.id)) room.items)::i_loc_list)
-  [] rooms
+    (List.map (fun item -> (item, room.id)) room.items)::i_loc_list) [] rooms)
 
 let rec main_game_loop (visited_rooms : string list)
   (item_locations : (string * string) list) (current_room_id : string)
@@ -135,25 +135,34 @@ let rec main_game_loop (visited_rooms : string list)
   let print_item item_id =
     Printf.printf "%s : %s\n" item_id (List.hd
       (List.filter (fun item -> item.id = item_id) items)).description in
-  (*Helper function for printing out the description of a room
+  (*Function for printing out the description of a room
    *Given a room_rec room, this function will print out the room description,
    *the list of items in the room, and the description of each item*)
-  let print_room room =
-    Printf.printf "%s\n" current_room.description;
-      (if current_room.items != []
-      then (Printf.printf "The room contains: \n";
-        List.iter (fun item -> print_item item) current_room.items)
-      else Printf.printf "The room does not contain any items\n") in
+  let print_room (room:room_rec) =
+    Printf.printf "%s\n" room.description;
+    (*Get the list of items that are in this room*)
+    let items_in_room =
+      List.map (fun i_loc -> fst i_loc)
+      (List.filter (fun i_loc -> (snd i_loc) = room.id) item_locations) in
+    (*Print the item list if there are items in this room*)
+    (if items_in_room != []
+    then (Printf.printf "The room contains: \n";
+      List.iter (fun item -> print_item item) items_in_room)
+    else Printf.printf "The room does not contain any items\n") in
   (*Function for moving moving to the next room according to the move command
    *Function calls main_game_loop with new states to go to next turn*)
   let goto_room move =
     let exit = get_exit move in
-      if exit <> [] then
-      main_game_loop
-      (if visited (List.hd exit).room
-        then visited_rooms else (List.hd exit).room::visited_rooms)
-      item_locations
-      (List.hd exit).room inventory 0 0 in
+    if exit <> [] then
+    (*Print out the room description for the next room*)
+    print_room
+      (List.hd (List.filter
+        (fun (room:room_rec) -> room.id = (List.hd exit).room) rooms));
+    main_game_loop
+    (if visited (List.hd exit).room
+      then visited_rooms else (List.hd exit).room::visited_rooms)
+    item_locations
+    (List.hd exit).room inventory 0 0 in
   (*Function for picking up an item
    *Function calls main_game_loop with new states to go to next turn*)
   let take_item item_id =
@@ -165,7 +174,7 @@ let rec main_game_loop (visited_rooms : string list)
       current_room_id (item_id::inventory) 0 0
     else Printf.printf "%s does not exist in this room.\n" item_id;
       main_game_loop
-      visited_rooms item_locations current_room_id inventory 0 0 in
+      visited_rooms item_locations current_room_id inventory points turns in
   (*Function for dropping an item
    *Function calls main_game_loop with new states to go to next turn*)
   let drop_item item_id =
@@ -177,7 +186,7 @@ let rec main_game_loop (visited_rooms : string list)
       current_room_id (List.filter (fun id -> id <> item_id) inventory) 0 0
     else Printf.printf "%s is not in your inventory.\n" item_id;
       main_game_loop
-      visited_rooms item_locations current_room_id inventory 0 0 in
+      visited_rooms item_locations current_room_id inventory points turns in
   (*Pattern match the input to figure out what the user wants*)
   let decode_input command =
     match command with
@@ -186,13 +195,21 @@ let rec main_game_loop (visited_rooms : string list)
     (*look command*)
     | "look"::tl -> print_room current_room;
       main_game_loop visited_rooms item_locations
-      current_room_id inventory 0 0
+      current_room_id inventory points turns
+    (*score command*)
+    | "score"::tl -> Printf.printf "Your score: %d\n" points;
+      main_game_loop visited_rooms item_locations
+      current_room_id inventory points turns
+    (*turns command*)
+    | "turns"::tl -> Printf.printf "Number of turns taken: %d\n" turns;
+      main_game_loop visited_rooms item_locations
+      current_room_id inventory points turns
     (*inventory command*)
     | hd::tl when hd = "inventory" || hd = "inv" ->
       Printf.printf "Your inventory contains:\n";
       List.iter (fun x -> Printf.printf "%s\n" x) inventory;
       main_game_loop visited_rooms item_locations
-      current_room_id inventory 0 0
+      current_room_id inventory points turns
     (*item take command*)
     | hd::tl when hd = "take" -> take_item (List.hd tl)
     (*item drop command*)
@@ -201,10 +218,12 @@ let rec main_game_loop (visited_rooms : string list)
     | hd::tl when hd = "go" -> goto_room (List.hd tl)
     (*single word movement commands*)
     | hd::[] when get_exit hd <> []-> goto_room hd
-    | hd::_ when hd = "tip" -> Printf.printf "So dank le meme +69420 pts"
+    | hd::_ when hd = "tip" -> Printf.printf "So dank le meme +69420 pts\n";
+      main_game_loop visited_rooms item_locations
+      current_room_id inventory (points+69420) turns
     | _ -> Printf.printf "Sorry I don't understand that\n";
       main_game_loop visited_rooms item_locations
       current_room_id inventory 0 0 in
   decode_input input_split in
 
-main_game_loop [] [] start_room start_items 0 0
+main_game_loop [] start_item_locations start_room start_items 0 0
