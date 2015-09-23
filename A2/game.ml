@@ -45,10 +45,10 @@ let parse_room r =
   let open Yojson.Basic.Util in
   {id           = to_string (member "id" r);
    description  = to_string (member "description" r);
-   items        = filter_string (filter_member "items" [r]);
+   items        = filter_string (flatten (filter_member "items" [r]));
    points       = to_int (member "points" r);
    exits        = parse_exits (flatten (filter_member "exits" [r]));
-   treasures    = filter_string (filter_member "treasure" [r]);}
+   treasures    = filter_string (flatten (filter_member "treasure" [r]));}
 (*Helper function for parsing an array of "item" json object*)
 let rec parse_items jsonItems =
   match jsonItems with
@@ -93,6 +93,14 @@ let items = extract_items t
 let rooms = extract_rooms t
 let start_room = extract_start_room t
 let start_items = extract_start_items t
+let max_points =
+  let get_treasure_pts treasure =
+    (List.hd (List.filter (fun i -> i.id = treasure) items)).points in
+  List.fold_left
+  (fun pts (room:room_rec) -> room.points +
+    (List.fold_left
+      (fun pts tre -> get_treasure_pts tre + pts) 0 room.treasures)
+     + pts) 0 rooms
 
 let rec main_game_loop (visited_rooms : string list)
   (item_locations : (string * string) list) (current_room_id : string)
@@ -116,6 +124,15 @@ let rec main_game_loop (visited_rooms : string list)
    *Returns a list. The list is empty for an invalid direction*)
   let get_exit move_input =
     List.filter (fun x -> x.direction = move_input) current_room.exits in
+  (*Function for moving moving to the next room according to the move command*)
+  let goto_room move =
+    let exit = get_exit move in
+      if exit <> [] then
+      main_game_loop
+      (if visited (List.hd exit).room
+        then visited_rooms else (List.hd exit).room::visited_rooms)
+      item_locations
+      (List.hd exit).room inventory 0 0 in
   (*Pattern match the input to figure out what the user wants*)
   let decode_input command =
     match command with
@@ -123,6 +140,10 @@ let rec main_game_loop (visited_rooms : string list)
     | "quit"::tl -> Printf.printf "Quitting game\n"
     (*look command*)
     | "look"::tl -> Printf.printf "%s\n" current_room.description;
+      (if current_room.items != []
+      then (Printf.printf "The room contains: \n";
+        List.iter (fun x -> Printf.printf "%s\n" x) current_room.items)
+      else Printf.printf "The room does not contain any items");
       main_game_loop visited_rooms item_locations
       current_room_id inventory 0 0
     (*inventory command*)
@@ -136,17 +157,9 @@ let rec main_game_loop (visited_rooms : string list)
       main_game_loop visited_rooms item_locations
       current_room_id inventory 0 0
     (*movement commands (using go)*)
-    | hd::tl when hd = "go" -> let exit = get_exit (List.hd tl) in
-      if exit <> [] then
-      main_game_loop
-      (if visited (List.hd exit).room
-        then visited_rooms else (List.hd exit).room::visited_rooms)
-      item_locations
-      (List.hd exit).room inventory 0 0
+    | hd::tl when hd = "go" -> goto_room (List.hd tl)
     (*single word movement commands*)
-    | hd::[] when get_exit hd <> []-> Printf.printf "%s\n" hd;
-      main_game_loop visited_rooms item_locations
-      current_room_id inventory 0 0
+    | hd::[] when get_exit hd <> []-> goto_room hd
     | _ -> Printf.printf "Sorry I don't understand that\n";
       main_game_loop visited_rooms item_locations
       current_room_id inventory 0 0 in
