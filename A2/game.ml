@@ -56,28 +56,25 @@ let rec parse_rooms jsonRooms =
   match jsonRooms with
   | [] -> []
   | hd::tl -> parse_room hd :: parse_rooms tl
-(*Function extracts an array of all "room" json objects*)
+(*Functions for extracting various json objects*)
 let extract_rooms (t : Yojson.Basic.json) : room_rec list =
   let open Yojson.Basic.Util in
   [t]
   |> filter_member "rooms"
   |> flatten
   |> parse_rooms
-
 let extract_items (t : Yojson.Basic.json) : item_rec list =
   let open Yojson.Basic.Util in
   [t]
   |> filter_member "items"
   |> flatten
   |> parse_items
-
 let extract_start_room (t: Yojson.Basic.json) : string =
   let open Yojson.Basic.Util in
   [t]
   |> filter_member "start_room"
   |> List.hd
   |> to_string
-
 let extract_start_items (t: Yojson.Basic.json) : string list =
   let open Yojson.Basic.Util in
   [t]
@@ -89,7 +86,11 @@ let game_file =
   match Array.to_list Sys.argv with
   | prgm::file::[] -> file
   | _ -> Printf.printf "\nPlease give a game file as an argument\n"; exit 0
-let t = Yojson.Basic.from_file game_file
+let t =
+  try
+    Yojson.Basic.from_file game_file
+  with
+    | _ -> Printf.printf "Invalid JSON file!\n"; exit 0
 let items = extract_items t
 let rooms = extract_rooms t
 let start_room = extract_start_room t
