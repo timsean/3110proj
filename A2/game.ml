@@ -86,15 +86,15 @@ let game_file =
   match Array.to_list Sys.argv with
   | prgm::file::[] -> file
   | _ -> Printf.printf "\nPlease give a game file as an argument\n"; exit 0
-let t =
+let game =
   try
     Yojson.Basic.from_file game_file
   with
     | _ -> Printf.printf "Invalid JSON file!\n"; exit 0
-let items = extract_items t
-let rooms = extract_rooms t
-let start_room = extract_start_room t
-let start_items = extract_start_items t
+let items = extract_items game
+let rooms = extract_rooms game
+let start_room = extract_start_room game
+let start_items = extract_start_items game
 (*The max number of points that can be earned*)
 let max_points =
   (List.fold_left (fun pts (room:room_rec) -> room.points + pts) 0 rooms) +
@@ -104,18 +104,23 @@ let start_item_locations =
   List.flatten (List.fold_left
   (fun i_loc_list (room:room_rec) ->
     (List.map (fun item -> (item, room.id)) room.items)::i_loc_list) [] rooms)
+(*Helper function for calculate the number of points an item is worth
+ *in the room it's in. An item will only be worth its points when it's
+ *in the designated room. This function returns the item's points if
+ *it's in the designated room and 0 otherwise. It is used by the functions
+ *take_item, drop_item, and for evaluating start_points*)
+let calc_item_points item_id room_id =
+  let room = List.hd
+    (List.filter (fun (room:room_rec) ->
+    (String.lowercase room.id) = (String.lowercase room_id)) rooms) in
+  if List.filter (fun tre ->
+    (String.lowercase tre) = (String.lowercase item_id)) room.treasures <> []
+  then (List.hd (List.filter
+    (fun i ->
+      (String.lowercase i.id) = (String.lowercase item_id)) items)).points
+  else 0
 (*The starting points*)
 let start_points =
-  let calc_item_points item_id room_id =
-    let room = List.hd
-      (List.filter (fun (room:room_rec) ->
-      (String.lowercase room.id) = (String.lowercase room_id)) rooms) in
-    if List.filter (fun tre ->
-      (String.lowercase tre) = (String.lowercase item_id)) room.treasures <> []
-    then (List.hd (List.filter
-      (fun i ->
-        (String.lowercase i.id) = (String.lowercase item_id)) items)).points
-    else 0 in
   (*The points of the starting room*)
   ((List.hd (List.filter
     (fun (room:room_rec) -> room.id = start_room) rooms)).points) +
@@ -126,14 +131,16 @@ let start_points =
 
 let rec main_game_loop (visited_rooms : string list)
   (item_locations : (string * string) list) (current_room_id : string)
-  (inventory : string list) (points : int) (turns : int) =
+  (inventory : string list) (points : int) (turns : int) (new_game : bool)=
   (*Before everything, check to see if the game is completed (max pts = pts)*)
-  if points = max_points
-  then Printf.printf "\nYou have completed this quest in %d turns!\n" turns
-  else (*continue with the game*)
-  (*Read the input*)
-  let input = Printf.printf "\nCommand: ";
-    String.lowercase (read_line ()) in
+  if points = max_points then (Printf.printf
+    "\nYou have completed this quest in %d turns with %d points!\n"
+    turns points; exit 0);
+  (*Read the input
+   *At the start of the game, we force the input to be look, so that the game
+   *will display the description of the starting room. It's a bit hacky*)
+  let input = if new_game then "look"
+    else (Printf.printf "\nCommand: "; String.lowercase (read_line ())) in
   (*Tokenize the string for pattern matching*)
   let input_split = Str.bounded_split (Str.regexp "[ \t]+") input 2 in
   (*Get the room record for the current room*)
@@ -169,7 +176,8 @@ let rec main_game_loop (visited_rooms : string list)
     (if items_in_room != []
     then (Printf.printf "The room contains: \n";
       List.iter (fun item -> print_item item) items_in_room)
-    else Printf.printf "The room does not contain any items\n") in
+    else Printf.printf "The room does not contain any items\n");
+    Printf.printf "----------------------------------------------\n" in
   (*Function for moving moving to the next room according to the move command
    *Function calls main_game_loop with new states to go to next turn*)
   let goto_room move =
@@ -189,20 +197,10 @@ let rec main_game_loop (visited_rooms : string list)
     (points +
       (if visited next_room.id then 0 else next_room.points))
     (turns + 1)
+    false
     else Printf.printf "%s is not a valid move! \n" move;
-      main_game_loop
-        visited_rooms item_locations current_room_id inventory points turns in
-  (*Helper function for calculate the number of points an item is worth
-   *in the room it's in. To be used by take_item and drop_item.
-   *An item will only be worth its points when it's in the designated room
-   *This function returns the item's points if it's in the designated room
-   *and 0 otherwise*)
-  let calc_item_points item_id =
-    if List.filter (fun tre ->
-      (String.lowercase tre) = item_id) current_room.treasures <> []
-    then (List.hd (List.filter
-      (fun i -> (String.lowercase i.id) = item_id) items)).points
-    else 0 in
+      main_game_loop visited_rooms item_locations
+        current_room_id inventory points turns false in
   (*Function for picking up an item
    *Function calls main_game_loop with new states to go to next turn*)
   let take_item item_id =
@@ -211,7 +209,7 @@ let rec main_game_loop (visited_rooms : string list)
       (List.map (fun i_tuple -> fst i_tuple) (List.filter
         (fun i_loc -> snd i_loc = current_room_id) item_locations))in
     if item <> []
-    then let item_points = calc_item_points item_id in
+    then let item_points = calc_item_points item_id current_room_id in
       Printf.printf "\nYou have taken %s and lost %d points\n"
         (List.hd item) item_points;
       main_game_loop
@@ -223,16 +221,17 @@ let rec main_game_loop (visited_rooms : string list)
       ((List.hd item)::inventory)
       (points - item_points)
       (turns + 1)
+      false
     else Printf.printf "\n%s does not exist in this room.\n" item_id;
-      main_game_loop
-        visited_rooms item_locations current_room_id inventory points turns in
+      main_game_loop visited_rooms item_locations
+        current_room_id inventory points turns false in
   (*Function for dropping an item
    *Function calls main_game_loop with new states to go to next turn*)
   let drop_item item_id =
     let item = List.filter (fun id ->
       (String.lowercase id) = item_id) inventory in
     if item <> []
-    then let item_points = calc_item_points item_id in
+    then let item_points = calc_item_points item_id current_room_id in
       Printf.printf "\nYou have dropped %s and gained %d points\n"
         (List.hd item) item_points;
       main_game_loop
@@ -243,9 +242,10 @@ let rec main_game_loop (visited_rooms : string list)
       (List.filter (fun id -> (String.lowercase id) <> item_id) inventory)
       (points + item_points)
       (turns + 1)
+      false
     else Printf.printf "\n%s is not in your inventory.\n" item_id;
-      main_game_loop
-        visited_rooms item_locations current_room_id inventory points turns in
+      main_game_loop visited_rooms item_locations
+        current_room_id inventory points turns false in
   (*Pattern match the input to figure out what the user wants*)
   let decode_input command =
     match command with
@@ -255,33 +255,33 @@ let rec main_game_loop (visited_rooms : string list)
     (*look command*)
     | "look"::tl -> print_room current_room;
       main_game_loop visited_rooms item_locations
-      current_room_id inventory points turns
+      current_room_id inventory points turns false
     (*score command*)
     | "score"::tl -> Printf.printf "\nYour score: %d\n" points;
       main_game_loop visited_rooms item_locations
-      current_room_id inventory points turns
+      current_room_id inventory points turns false
     (*turns command*)
     | "turns"::tl -> Printf.printf "\nNumber of turns taken: %d\n" turns;
       main_game_loop visited_rooms item_locations
-      current_room_id inventory points turns
+      current_room_id inventory points turns false
     (*inventory command*)
     | hd::tl when hd = "inventory" || hd = "inv" ->
       Printf.printf "\nYour inventory contains:\n";
       List.iter (fun x -> Printf.printf "%s\n" x) inventory;
       main_game_loop visited_rooms item_locations
-      current_room_id inventory points turns
+      current_room_id inventory points turns false
     (*item take command*)
-    | hd::tl when hd = "take" -> take_item (List.hd tl)
+    | hd::tl when hd = "take" && tl <> [] -> take_item (List.hd tl)
     (*item drop command*)
-    | hd::tl when hd = "drop" -> drop_item (List.hd tl)
+    | hd::tl when hd = "drop" && tl <> [] -> drop_item (List.hd tl)
     (*movement commands (using go)*)
-    | hd::tl when hd = "go" -> goto_room (List.hd tl)
+    | hd::tl when hd = "go" && tl <> [] -> goto_room (List.hd tl)
     (*single word movement commands*)
     | hd::[] when get_exit hd <> []-> goto_room hd
     (*unrecognized command*)
     | _ -> Printf.printf "\nSorry I don't understand that\n";
       main_game_loop visited_rooms item_locations
-      current_room_id inventory points turns in
+      current_room_id inventory points turns false in
   decode_input input_split in
 
 main_game_loop
@@ -290,3 +290,4 @@ main_game_loop
   start_room start_items
   start_points
   0
+  true

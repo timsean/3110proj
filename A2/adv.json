@@ -204,42 +204,42 @@
     {
       "id": "cat gif",
       "description": "A funny and cute cat gif",
-      "points": 100
+      "points": 250
     },
     {
       "id": "dank meme",
       "description": "A dank meme picture",
-      "points": 500
+      "points": 1000
     },
     {
       "id": "interesting pic",
       "description": "A mildly interesting picture",
-      "points": 100
+      "points": 2500
     },
     {
       "id": "tifu post",
       "description": "A tifu post",
-      "points": 100
+      "points": 1000
     },
     {
       "id": "funny picture",
       "description": "http://i.imgur.com/9jymHjj.jpg",
-      "points": 100
+      "points": 500
     },
     {
       "id": "iama comment",
       "description": "An iama question for Adam Sandler",
-      "points": 100
+      "points": 300
     },
     {
       "id": "pun comment",
       "description": "It's just having a little fawn",
-      "points": 100
+      "points": 1200
     },
     {
       "id": "meta comment",
       "description": "A comment with a meta reference",
-      "points": 100
+      "points": 600
     }
   ],
   "start_items": ["tifu post", "iama comment", "pun comment", "meta comment", "dank meme"]
