@@ -1,6 +1,3 @@
-#require "yojson"
-#require "str"
-open Yojson
 (*Record for an exit*)
 type exit_rec =
   {
@@ -88,7 +85,11 @@ let extract_start_items (t: Yojson.Basic.json) : string list =
   |> flatten
   |> filter_string
 
-let t = Yojson.Basic.from_file "gates.json"
+let game_file =
+  match Array.to_list Sys.argv with
+  | prgm::file::[] -> file
+  | _ -> Printf.printf "\nPlease give a game file as an argument\n"; exit 0
+let t = Yojson.Basic.from_file game_file
 let items = extract_items t
 let rooms = extract_rooms t
 let start_room = extract_start_room t
@@ -125,8 +126,13 @@ let start_points =
 let rec main_game_loop (visited_rooms : string list)
   (item_locations : (string * string) list) (current_room_id : string)
   (inventory : string list) (points : int) (turns : int) =
+  (*Before everything, check to see if the game is completed (max pts = pts)*)
+  if points = max_points
+  then Printf.printf "\nYou have completed this quest in %d turns!\n" turns
+  else (*continue with the game*)
   (*Read the input*)
-  let input = String.lowercase (read_line ()) in
+  let input = Printf.printf "\nCommand: ";
+    String.lowercase (read_line ()) in
   (*Tokenize the string for pattern matching*)
   let input_split = Str.bounded_split (Str.regexp "[ \t]+") input 2 in
   (*Get the room record for the current room*)
@@ -174,14 +180,14 @@ let rec main_game_loop (visited_rooms : string list)
     (*Print out the room description for the next room*)
     print_room next_room;
     (*Call main loop again with the new room*)
-    (main_game_loop
+    main_game_loop
     (if visited next_room.id
       then visited_rooms else (List.hd exit).room::visited_rooms)
     item_locations
     (List.hd exit).room inventory
     (points +
       (if visited next_room.id then 0 else next_room.points))
-    (turns + 1))
+    (turns + 1)
     else Printf.printf "%s is not a valid move! \n" move;
       main_game_loop
         visited_rooms item_locations current_room_id inventory points turns in
@@ -200,11 +206,12 @@ let rec main_game_loop (visited_rooms : string list)
    *Function calls main_game_loop with new states to go to next turn*)
   let take_item item_id =
     (*Temp variable for storing the actual name (case accurate) of the item*)
-    let item = List.filter (fun id ->
-      (String.lowercase id) = item_id) current_room.items in
+    let item = List.filter (fun id -> (String.lowercase id) = item_id)
+      (List.map (fun i_tuple -> fst i_tuple) (List.filter
+        (fun i_loc -> snd i_loc = current_room_id) item_locations))in
     if item <> []
     then let item_points = calc_item_points item_id in
-      Printf.printf "You have taken %s and lost %d points\n\n"
+      Printf.printf "\nYou have taken %s and lost %d points\n"
         (List.hd item) item_points;
       main_game_loop
       visited_rooms
@@ -215,7 +222,7 @@ let rec main_game_loop (visited_rooms : string list)
       ((List.hd item)::inventory)
       (points - item_points)
       (turns + 1)
-    else Printf.printf "%s does not exist in this room.\n" item_id;
+    else Printf.printf "\n%s does not exist in this room.\n" item_id;
       main_game_loop
         visited_rooms item_locations current_room_id inventory points turns in
   (*Function for dropping an item
@@ -225,7 +232,7 @@ let rec main_game_loop (visited_rooms : string list)
       (String.lowercase id) = item_id) inventory in
     if item <> []
     then let item_points = calc_item_points item_id in
-      Printf.printf "You have taken %s and gained %d points\n\n"
+      Printf.printf "\nYou have dropped %s and gained %d points\n"
         (List.hd item) item_points;
       main_game_loop
       visited_rooms
@@ -235,29 +242,30 @@ let rec main_game_loop (visited_rooms : string list)
       (List.filter (fun id -> (String.lowercase id) <> item_id) inventory)
       (points + item_points)
       (turns + 1)
-    else Printf.printf "%s is not in your inventory.\n" item_id;
+    else Printf.printf "\n%s is not in your inventory.\n" item_id;
       main_game_loop
         visited_rooms item_locations current_room_id inventory points turns in
   (*Pattern match the input to figure out what the user wants*)
   let decode_input command =
     match command with
     (*quit command*)
-    | "quit"::tl -> Printf.printf "Quitting game\n"
+    | "quit"::tl -> Printf.printf "\nSuccess is not final, failure is not fatal:
+     it is the courage to continue that counts.\n"; exit 0
     (*look command*)
     | "look"::tl -> print_room current_room;
       main_game_loop visited_rooms item_locations
       current_room_id inventory points turns
     (*score command*)
-    | "score"::tl -> Printf.printf "Your score: %d\n\n" points;
+    | "score"::tl -> Printf.printf "\nYour score: %d\n" points;
       main_game_loop visited_rooms item_locations
       current_room_id inventory points turns
     (*turns command*)
-    | "turns"::tl -> Printf.printf "Number of turns taken: %d\n\n" turns;
+    | "turns"::tl -> Printf.printf "\nNumber of turns taken: %d\n" turns;
       main_game_loop visited_rooms item_locations
       current_room_id inventory points turns
     (*inventory command*)
     | hd::tl when hd = "inventory" || hd = "inv" ->
-      Printf.printf "Your inventory contains:\n";
+      Printf.printf "\nYour inventory contains:\n";
       List.iter (fun x -> Printf.printf "%s\n" x) inventory;
       main_game_loop visited_rooms item_locations
       current_room_id inventory points turns
@@ -269,12 +277,10 @@ let rec main_game_loop (visited_rooms : string list)
     | hd::tl when hd = "go" -> goto_room (List.hd tl)
     (*single word movement commands*)
     | hd::[] when get_exit hd <> []-> goto_room hd
-    | hd::_ when hd = "tip" -> Printf.printf "So dank le meme +69420 pts\n";
+    (*unrecognized command*)
+    | _ -> Printf.printf "\nSorry I don't understand that\n";
       main_game_loop visited_rooms item_locations
-      current_room_id inventory (points+69420) turns
-    | _ -> Printf.printf "Sorry I don't understand that\n";
-      main_game_loop visited_rooms item_locations
-      current_room_id inventory 0 0 in
+      current_room_id inventory points turns in
   decode_input input_split in
 
 main_game_loop

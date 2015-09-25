@@ -17,7 +17,7 @@
     {
       "id": "room2",
       "description": "This is Room 2.  There is an exit to the south.\nYou should drop the black hat here.",
-      "items": ["gray hat"],
+      "items": [],
       "points": 10,
       "exits": [
         {
@@ -39,11 +39,6 @@
     {
       "id": "white hat",
       "description": "A white panama",
-      "points": 100
-    },
-    {
-      "id": "gray hat",
-      "description": "A gray panama",
       "points": 100
     }
   ],

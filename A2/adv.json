@@ -1,0 +1,246 @@
+{
+  "rooms":
+  [
+    {
+      "id": "Frontpage",
+      "description": "Welcome to le dank meme adventures of reddit. This is the frontpage. It shows the hottest posts and is generally filled with dank memes, gifs, and other random posts.\nYou can visit other subreddits from here. Here are the list of subreddits that you can visit from here: funny, aww, tifu, iama, pics, mildlyinteresting, and circlejerk.\nYour goal is to accumulate as much karma (points) as possible.\nWhen you are in a subreddit or a post, you can type home to come back to the frontpage. When you are in a post, you can type back to go back into the subreddit.",
+      "items": [],
+      "points": 10,
+      "exits": [
+        {
+          "direction": "funny",
+          "room": "r/funny"
+        },
+        {
+          "direction": "aww",
+          "room": "r/aww"
+        },
+        {
+          "direction": "tifu",
+          "room": "r/tifu"
+        },
+        {
+          "direction": "iama",
+          "room": "r/iama"
+        },
+        {
+          "direction": "pics",
+          "room": "r/pics"
+        },
+        {
+          "direction": "mildlyinteresting",
+          "room": "r/mildlyinteresting"
+        },
+        {
+          "direction": "circlejerk",
+          "room": "r/circlejerk"
+        }
+      ],
+      "treasure": []
+    },
+    {
+      "id": "r/funny",
+      "description": "This is the funny subreddit. It contains text posts and pictures that redditzens find funny. Type in post to view the current top post. You should also repost anything you find funny here (such as things you see in aww). You also see a nice \"dank gif\" that you want to steal to repost later.",
+      "items": ["dank gif"],
+      "points": 10,
+      "exits": [
+        {
+          "direction": "home",
+          "room": "Frontpage"
+        },
+        {
+          "direction": "post",
+          "room": "Funny pic post"
+        }
+      ],
+      "treasure": ["cat gif","funny picture"]
+    },
+    {
+      "id": "Funny pic post",
+      "description": "http://i.imgur.com/wgJBsUG.jpg\nYou just thought of a nice pun that you want to post.",
+      "items": [],
+      "points": 10,
+      "exits": [
+        {
+          "direction": "home",
+          "room": "Frontpage"
+        },
+        {
+          "direction": "back",
+          "room": "r/funny"
+        }
+      ],
+      "treasure": ["pun comment"]
+    },
+    {
+      "id": "r/aww",
+      "description": "This is the aww subreddit. It generally contains cute pics of cats and dogs and sometimes other dank animals. Currently, the top post is a nice \"cat gif\"",
+      "items": ["cat gif"],
+      "points": 10,
+      "exits": [
+        {
+          "direction": "home",
+          "room": "Frontpage"
+        }
+      ],
+      "treasure": []
+    },
+    {
+      "id": "r/tifu",
+      "description": "This is the TIFU subreddit. You made a huge mistake the other day and have a nice story to tell. Maybe you should post a TIFU.",
+      "items": [],
+      "points": 10,
+      "exits": [
+        {
+          "direction": "home",
+          "room": "Frontpage"
+        }
+      ],
+      "treasure": ["tifu post"]
+    },
+    {
+      "id": "r/iama",
+      "description": "This is the ask me anything subreddit. It contains famous and non famous people allowing anybody to ask anything. Type in post to go to the top post.",
+      "items": [],
+      "points": 10,
+      "exits": [
+        {
+          "direction": "home",
+          "room": "Frontpage"
+        },
+        {
+          "direction": "post",
+          "room": "[IAmA] Adam Sandler"
+        }
+      ],
+      "treasure": []
+    },
+    {
+      "id": "[IAmA] Adam Sandler",
+      "description": "This is the Adam Sandler AMA. You have some questions about the movie Grown Ups.",
+      "items": [],
+      "points": 10,
+      "exits": [
+        {
+          "direction": "home",
+          "room": "Frontpage"
+        },
+        {
+          "direction": "back",
+          "room": "r/iama"
+        }
+      ],
+      "treasure": ["iama comment"]
+    },
+    {
+      "id": "r/pics",
+      "description": "This is the picture subreddit. People post various pictures here. It contains a lot of reposts and is also easy to get upvotes. Type in post to go to the current top post.",
+      "items": ["dank gif"],
+      "points": 10,
+      "exits": [
+        {
+          "direction": "home",
+          "room": "Frontpage"
+        },
+        {
+          "direction": "post",
+          "room": "Funny Picture"
+        }
+      ],
+      "treasure": ["interesting pic"]
+    },
+    {
+      "id": "Funny Picture",
+      "description": "This is a funny picture.",
+      "items": ["funny picture"],
+      "points": 10,
+      "exits": [
+        {
+          "direction": "home",
+          "room": "Frontpage"
+        },
+        {
+          "direction": "back",
+          "room": "r/pics"
+        }
+      ],
+      "treasure": ["meta comment"]
+    },
+    {
+      "id": "r/mildlyinteresting",
+      "description": "This is the mildly interesting subreddit. It contains people posting interesting pictures and gifs. You can also easily steal pictures from here and post it elsewhere to get sweet karma.",
+      "items": ["interesting pic"],
+      "points": 10,
+      "exits": [
+        {
+          "direction": "home",
+          "room": "Frontpage"
+        }
+      ],
+      "treasure": ["dank gif"]
+    },
+    {
+      "id": "r/circlejerk",
+      "description": "This is the dungeon of reddit. It contains many meta joke posts and dank spooky skeletons. You can easily get upvotes by posting here.",
+      "items": ["dank gif"],
+      "points": 10,
+      "exits": [
+        {
+          "direction": "home",
+          "room": "Frontpage"
+        }
+      ],
+      "treasure": ["dank meme"]
+    }
+  ],
+  "start_room": "Frontpage",
+  "items":
+  [
+    {
+      "id": "dank gif",
+      "description": "A dank gif",
+      "points": 100
+    },
+    {
+      "id": "cat gif",
+      "description": "A funny and cute cat gif",
+      "points": 100
+    },
+    {
+      "id": "dank meme",
+      "description": "A dank meme picture",
+      "points": 500
+    },
+    {
+      "id": "interesting pic",
+      "description": "A mildly interesting picture",
+      "points": 100
+    },
+    {
+      "id": "tifu post",
+      "description": "A tifu post",
+      "points": 100
+    },
+    {
+      "id": "funny picture",
+      "description": "http://i.imgur.com/9jymHjj.jpg",
+      "points": 100
+    },
+    {
+      "id": "iama comment",
+      "description": "An iama question for Adam Sandler",
+      "points": 100
+    },
+    {
+      "id": "pun comment",
+      "description": "It's just having a little fawn",
+      "points": 100
+    },
+    {
+      "id": "meta comment",
+      "description": "A comment with a meta reference",
+      "points": 100
+    }
+  ],
+  "start_items": ["tifu post", "iama comment", "pun comment", "meta comment", "dank meme"]
+}
