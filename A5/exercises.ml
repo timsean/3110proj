@@ -12,10 +12,17 @@ let fork d f1 f2 =
   upon d (fun a -> (f1 a); (f2 a); ())
 
 let parallel_map f l =
-  failwith "TODO"
+  let emptydef = return [] in
+  List.fold_left
+    (fun acc a -> (f a) >>= (fun x -> acc >>= (fun bl -> return (x::bl)))) emptydef l
 
 let sequential_map f l =
-  failwith "TODO"
+  let rec helper alst =
+    match alst with
+    | [] -> return []
+    | hd::tl -> (f hd) >>=
+      (fun b -> (helper tl) >>= (fun bl -> return (b::bl))) in
+  helper l
 
 let any ds =
   failwith "TODO"
