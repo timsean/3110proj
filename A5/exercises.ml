@@ -9,7 +9,7 @@ let both d1 d2 =
   d1 >>= (fun a -> (d2 >>= (fun b -> return (a, b))))
 
 let fork d f1 f2 =
-  upon d (fun a -> (f1 a); (f2 a); ())
+  upon d (fun a -> f1 a; ()); upon d (fun a -> f2 a; ())
 
 let parallel_map f l =
   (List.fold_left
@@ -28,4 +28,4 @@ let any ds =
   let result = Ivar.create () in
   let fill = fun x -> if Ivar.is_empty result then Ivar.fill result x in
   List.fold_left (fun acc a -> upon a fill) () ds;
-  return (Ivar.read result)
+  Ivar.read result
