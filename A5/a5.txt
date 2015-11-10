@@ -1,0 +1,32 @@
+Summarize your solution
+-----------------------
+
+* What was your approach to solving the assignment?
+* Are there any known bugs in your solution?
+
+Feedback on the assignment
+--------------------------
+
+* What was fun about the assignment?
+* What did you find especially hard?
+* How could the assignment be made more valuable?
+
+Teamwork
+--------
+
+* What are your team's ground rules? What changes
+  to these rules might improve the functioning of
+  your team in A6?
+
+* How is everyone encouraged to stay accountable to the
+  tasks they have been assigned?
+
+* What conflicts have arisen within your team? How (if at
+  all) have the conflicts been resolved? What could you do
+  to improve your team's ability to deal productively with
+  conflict?
+
+* How do your meetings typically proceed? What do you
+  accomplish and in how much time? What is effective about
+  your team functioning during meetings? What changes would
+  improve your meetings?
