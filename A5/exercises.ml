@@ -12,9 +12,9 @@ let fork d f1 f2 =
   upon d (fun a -> (f1 a); (f2 a); ())
 
 let parallel_map f l =
-  let emptydef = return [] in
-  List.fold_left
-    (fun acc a -> (f a) >>= (fun x -> acc >>= (fun bl -> return (x::bl)))) emptydef l
+  (List.fold_left
+    (fun acc a -> (f a) >>= (fun x -> acc >>= (fun bl -> return (x::bl))))
+    (return []) l) >>= (fun blist -> return (List.rev blist))
 
 let sequential_map f l =
   let rec helper alst =
@@ -25,5 +25,7 @@ let sequential_map f l =
   helper l
 
 let any ds =
-  failwith "TODO"
-
+  let result = Ivar.create () in
+  let fill = fun x -> if Ivar.is_empty result then Ivar.fill result x in
+  List.fold_left (fun acc a -> upon a fill) () ds;
+  return (Ivar.read result)
