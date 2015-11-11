@@ -9,7 +9,7 @@ val create : unit -> 'a t
 (** Add an element to the queue. *)
 val push   : 'a t -> 'a -> unit
 
-(** Wait until an element becomes available, and then remove and return it. *)
+(** Returns a Deferred that will become determined when an item in the queue is available *)
 val pop    : 'a t -> 'a Deferred.t
 
 (** Return true if the queue is empty *)
