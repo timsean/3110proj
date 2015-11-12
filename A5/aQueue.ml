@@ -24,6 +24,7 @@ let push q x =
 
 let pop q =
   if is_empty q then
-    (q := (!q) @ [Ivar.create ()]; Ivar.read (List.hd (!q)))
+    let empty_ivar = Ivar.create () in
+    (q := (!q) @ [empty_ivar]; Ivar.read empty_ivar)
   else
     (let result = Ivar.read (List.hd (!q)) in q := List.tl (!q); result)

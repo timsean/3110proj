@@ -41,6 +41,22 @@ TEST_MODULE "queue tests" = struct
   TEST "async_pop" = (deferredpop = (return 123))
   TEST "after_async_pop_isempty" = is_empty qtest
 
+  let defpop1 = pop qtest
+  TEST "async_pop1_isempty" = is_empty qtest
+  let defpop2 = pop qtest
+  TEST "async_pop2_isempty" = is_empty qtest
+  let defpop3 = pop qtest
+  TEST "async_pop3_isempty" = is_empty qtest
+  let _ = push qtest 10
+  TEST "async_pop1" = (defpop1 = (return 10))
+  TEST "after_async_pop1_isempty" = is_empty qtest
+  let _ = push qtest 20
+  TEST "async_pop2" = (defpop2 = (return 20))
+  TEST "after_async_pop1_isempty" = is_empty qtest
+  let _ = push qtest 30
+  TEST "async_pop3" = (defpop3 = (return 30))
+  TEST "after_async_pop1_isempty" = is_empty qtest
+
 
   TEST "pop has unit tests" = failwith "TODO"
 
