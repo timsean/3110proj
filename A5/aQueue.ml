@@ -1,5 +1,14 @@
 open Async.Std
 
+(** AF: the list [a1; ...; an] represents the queue {a1; ...; an}.
+  * The head of the list (a1) represents the top of the queue (oldest item).
+  * a1, ..., an are Ivars that can either be empty or filled. A list of all
+  * empty Ivars represents an empty queue.
+  * The list is captured by a ref to allow mutability
+  * RI: The list cannot contain both filled and unfilled Ivars. Unfilled Ivars
+  * only occur when we try to pop from an empty queue. Once something is pushed,
+  * that Ivar is filled but also removed from the queue.
+  *)
 type 'a t = 'a Ivar.t list ref
 
 let create () =

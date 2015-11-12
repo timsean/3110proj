@@ -6,16 +6,18 @@ open Async.Std
 (******************************************************************************)
 
 (** Note: you do not need to write unit tests for job. *)
+TEST_MODULE "exercise tests" = struct
 
-TEST "both has unit tests" = failwith "TODO"
+  TEST "both has unit tests" = failwith "TODO"
 
-TEST "fork has unit tests" = failwith "TODO"
+  TEST "fork has unit tests" = failwith "TODO"
 
-TEST "parallel_map has unit tests" = failwith "TODO"
+  TEST "parallel_map has unit tests" = failwith "TODO"
 
-TEST "sequential_map has unit tests" = failwith "TODO"
+  TEST "sequential_map has unit tests" = failwith "TODO"
 
-TEST "any has unit tests" = failwith "TODO"
+  TEST "any has unit tests" = failwith "TODO"
+end
 
 (******************************************************************************)
 (** Unit tests for AQueue *****************************************************)
