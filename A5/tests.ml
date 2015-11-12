@@ -8,7 +8,6 @@ open Async.Std
 (** Note: you do not need to write unit tests for job. *)
 TEST_MODULE "exercise tests" = struct
   (*both tests*)
-(*
   TEST "both_immediate" = Thread_safe.block_on_async
     (fun () -> both (return 42) (return 24)) = Core.Std.Result.Ok (42,24)
 
@@ -16,7 +15,7 @@ TEST_MODULE "exercise tests" = struct
     (fun () -> both (job "a" 1.0) (job "b" 2.0)) = Core.Std.Result.Ok ("a","b")
 
   TEST "both_immed_and_wait" = Thread_safe.block_on_async
-    (fun () -> both (job "a" 1.0) (return 42)) = Core.Std.Result.Ok ("a",42)*)
+    (fun () -> both (job "a" 1.0) (return 42)) = Core.Std.Result.Ok ("a",42)
 
   (*fork tests*)
   let wait = job "z" 1.
@@ -39,33 +38,33 @@ TEST_MODULE "exercise tests" = struct
   (*map tests*)
   let job_name_list = ["a";"b";"c"]
   let number_list = [1;2;3]
-  let ref_list = [ref 1; ref 2; ref 3]
+  let ref_num = ref 0
+  let ref_str = ref "0"
 
   let parallel_map_immediate = parallel_map (fun x -> return x) number_list
   TEST "parallel_map_immediate" = Thread_safe.block_on_async
     (fun () -> parallel_map_immediate) = Core.Std.Result.Ok number_list
 
-  let parallel_map_wait = parallel_map (fun x -> job x 1.) job_name_list
-  TEST "parallel_map_wait" = Thread_safe.block_on_async
-    (fun () -> parallel_map_wait) = Core.Std.Result.Ok job_name_list
-
   let parallel_map_wait_mixed = parallel_map
     (fun x -> if x = "a" then job x 2. else job x 1.) job_name_list
-  TEST "parallel_map_wait_mixed" = Thread_safe.block_on_async
-    (fun () -> parallel_map_wait_mixed) = Core.Std.Result.Ok job_name_list
+  TEST "parallel_map_wait_mixed_wait" = Thread_safe.block_on_async
+    (fun () -> (after (Core.Std.sec 2.))) = Core.Std.Result.Ok ()
+  TEST "parallel_map_wait_mixed" =
+    parallel_map_wait_mixed = return job_name_list
 
-  let sequential_map_immediate = sequential_map (fun x -> return x) number_list
+  let sequential_map_immediate = sequential_map
+    (fun x -> let res = ref_num := x; return x in
+      (if !ref_num <> x then ref_num := 99; res)) number_list
   TEST "sequential_map_immediate" = Thread_safe.block_on_async
     (fun () -> sequential_map_immediate) = Core.Std.Result.Ok number_list
+  TEST "sequential_map_immediate_ok" = !ref_num = 3
 
-  let sequential_map_wait = sequential_map (fun x -> job "wait" 1.) job_name_list
+  let sequential_map_wait = sequential_map
+    (fun x -> let res = ref_str := x; job x 1. in
+      (if !ref_str <> x then ref_str := "z"; res)) job_name_list
   TEST "sequential_map_wait" = Thread_safe.block_on_async
     (fun () -> sequential_map_wait) = Core.Std.Result.Ok job_name_list
-
-  let sequential_map_wait_mixed = sequential_map
-    (fun x -> if x = "a" then job x 2. else job x 1.) job_name_list
-  TEST "sequential_map_wait_mixed" = Thread_safe.block_on_async
-    (fun () -> sequential_map_wait_mixed) = Core.Std.Result.Ok job_name_list
+  TEST "sequential_map_wait_ok" = !ref_str = "c"
 
   (*any tests*)
   let job_list_immediate = [return 1; return 2; return 3]
