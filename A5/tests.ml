@@ -56,9 +56,4 @@ TEST_MODULE "queue tests" = struct
   let _ = push qtest 30
   TEST "async_pop3" = (defpop3 = (return 30))
   TEST "after_async_pop1_isempty" = is_empty qtest
-
-
-  TEST "pop has unit tests" = failwith "TODO"
-
-  TEST "is_empty has unit tests" = failwith "TODO"
 end
